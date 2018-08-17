@@ -8,7 +8,6 @@ if (jQuery != undefined) {
 (function($) {
 
     $(document).ready(function() {
-
         try {
             var _ = google;
         } catch (ReferenceError) {
@@ -28,14 +27,13 @@ if (jQuery != undefined) {
             'animation': google.maps.Animation.DROP
         };
 
-        $('.geoposition-widget').each(function() {
-            var $container = $(this),
-                $mapContainer = $('<div class="geoposition-map" />'),
+        function initializeMap(mapWidget) {
+            var $mapContainer = $('<div class="geoposition-map" />'),
                 $addressRow = $('<div class="geoposition-address" />'),
                 $searchRow = $('<div class="geoposition-search" />'),
                 $searchInput = $('<input>', {'type': 'search', 'placeholder': 'Start typing an address …'}),
-                $latitudeField = $container.find('input.geoposition:eq(0)'),
-                $longitudeField = $container.find('input.geoposition:eq(1)'),
+                $latitudeField = mapWidget.find('input.geoposition:eq(0)'),
+                $longitudeField = mapWidget.find('input.geoposition:eq(1)'),
                 latitude = parseFloat($latitudeField.val()) || null,
                 longitude = parseFloat($longitudeField.val()) || null,
                 map,
@@ -46,9 +44,9 @@ if (jQuery != undefined) {
                 markerCustomOptions,
                 marker;
 
-            $mapContainer.css('height', $container.attr('data-map-widget-height') + 'px');
-            mapCustomOptions = JSON.parse($container.attr('data-map-options'));
-            markerCustomOptions = JSON.parse($container.attr('data-marker-options'));
+            $mapContainer.css('height', (mapWidget.attr('data-map-widget-height') || 480) + 'px');
+            mapCustomOptions = JSON.parse(mapWidget.attr('data-map-options') || '{}');
+            markerCustomOptions = JSON.parse(mapWidget.attr('data-marker-options') || '{}');
 
             function doSearch() {
                 var gc = new google.maps.Geocoder();
@@ -117,10 +115,10 @@ if (jQuery != undefined) {
                     }, 1000);
                 }
             }).bind('abort', function() {
-                $(this).parent().find('ul.geoposition-results').remove();
+                mapWidget.parent().find('ul.geoposition-results').remove();
             });
             $searchInput.appendTo($searchRow);
-            $container.append($searchRow, $mapContainer, $addressRow);
+            mapWidget.append($searchRow, $mapContainer, $addressRow);
 
             mapLatLng = new google.maps.LatLng(latitude || 0, longitude || 0);
 
@@ -154,27 +152,30 @@ if (jQuery != undefined) {
             }
 
             $latitudeField.add($longitudeField).on('keyup', function(e) {
-	      updateMarkerPos();
-	      map.setCenter(center);
-	      map.setZoom(15);
-	      
+                updateMarkerPos();
+                map.setCenter(center);
+                map.setZoom(15);
             });
-	    
-	    map.addListener('rightclick', function(e) {
+
+            map.addListener('rightclick', function(e) {
                 $latitudeField.val(e.latLng.lat());
                 $longitudeField.val(e.latLng.lng());
-		updateMarkerPos();
+                updateMarkerPos();
                 doGeocode();
             });
-	    
-	    function updateMarkerPos(){
-		var latitude = parseFloat($latitudeField.val()) || 0;
 
+            function updateMarkerPos() {
+                var latitude = parseFloat($latitudeField.val()) || 0;
                 var longitude = parseFloat($longitudeField.val()) || 0;
                 var center = new google.maps.LatLng(latitude, longitude);
                 marker.setPosition(center);
                 doGeocode();
-	    }
+            }
+        };
+
+        $('.geoposition-widget').each(function() {
+            initializeMap($(this));
         });
+        window.initializeMap = initializeMap;
     });
 })(django.jQuery);
